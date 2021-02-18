@@ -21,9 +21,9 @@ $menu-background-color: $secondary-background-color;
 $menu-hover-background-color: #3e3e3e;
 
 // Input background color for text inputs etc.
-$input-background-color: #ffffff;
+$input-background-color: #3e3e3e;
 // Input foreground color
-$input-foreground-color: #000000;
+$input-foreground-color: #ffffff;
 // Input border colors etc.
 $input-secondary-background-color: #b2b2b2;
 
@@ -31,6 +31,8 @@ $input-secondary-background-color: #b2b2b2;
 $foreground-color: #f5f5f5;
 // Color of selected items etc.
 $highlight-color: $secondary-background-color;
+// Font color of selected items etc.
+$highlight-foreground-color: $foreground-color;
 // Main Spotify green color
 $theme-color: #1db954;
 // Color for disabled text etc.
@@ -49,12 +51,43 @@ $slider-handle-color: #ffffff;
 	border-radius: 4px;
 }
 
+@mixin selection-foreground($color) {
+	selection-color: $color;
+
+	&::item::selected {
+		color: $color;
+	}
+}
+
 QWidget {
+	color: $foreground-color;
+
 	selection-background-color: $highlight-color;
+
+	&::item::selected {
+		background-color: $highlight-color;
+	}
+
+	@include selection-foreground($highlight-foreground-color);
+}
+
+QToolTip {
+	border: 1px solid $secondary-background-color;
+	background-color: $background-color;
 	color: $foreground-color;
 }
 
 QScrollBar {
+	$size: 12px;
+
+	&:horizontal {
+		max-height: $size;
+	}
+
+	&:vertical {
+		max-width: $size;
+	}
+
 	&::handle {
 		background-color: $scrollbar-handle-color;
 	}
@@ -83,6 +116,10 @@ QListWidget, QTreeWidget, QTextEdit {
 
 	QScrollBar {
 		background-color: $background-color;
+	}
+
+	&::item {
+		min-height: 24px;
 	}
 }
 
@@ -113,6 +150,8 @@ QMenu {
 QLineEdit {
 	background-color: $input-background-color;
 	color: $input-foreground-color;
+	border-radius: 4px;
+	padding: 4px;
 
 	&::disabled {
 		color: $disabled-color;
@@ -125,6 +164,7 @@ MainWindow {
 	MainToolBar {
 		background-color: $secondary-background-color;
 		border-style: none;
+		min-height: 42px;
 
 		&::separator {
 			background-color: $secondary-background-color;
@@ -163,6 +203,7 @@ LeftSidePanel {
 	LibraryList, PlaylistList {
 		color: $sidebar-foreground-color;
 		background-color: $sidebar-background-color;
+		@include selection-foreground($sidebar-foreground-color);
 
 		QScrollBar {
 			background-color: $sidebar-background-color;
@@ -174,7 +215,13 @@ SettingsDialog {
 	background-color: $background-color;
 
 	QListWidget {
+		color: $foreground-color;
 		background-color: $sidebar-background-color;
+		@include selection-foreground($foreground-color);
+
+		&::item {
+			min-height: 32px;
+		}
 	}
 }
 

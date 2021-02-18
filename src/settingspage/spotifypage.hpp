@@ -9,7 +9,7 @@
 class SpotifyPage: public SettingsPage
 {
 public:
-	SpotifyPage(Settings &settings, QWidget *parent);
+	SpotifyPage(lib::settings &settings, QWidget *parent);
 
 	QIcon icon() override;
 	QString title() override;
@@ -26,6 +26,7 @@ private:
 	QLabel *sptVersion = nullptr;
 	QLineEdit *sptPath = nullptr;
 	QLineEdit *sptUsername = nullptr;
+	QCheckBox *sptDiscovery = nullptr;
 
 	void globalConfigToggle(int state);
 	void startClientToggle(int state);

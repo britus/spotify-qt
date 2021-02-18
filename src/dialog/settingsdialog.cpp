@@ -1,6 +1,6 @@
 #include "settingsdialog.hpp"
 
-SettingsDialog::SettingsDialog(Settings &settings, QWidget *parent)
+SettingsDialog::SettingsDialog(lib::settings &settings, QWidget *parent)
 	: settings(settings),
 	QDialog(parent)
 {
@@ -70,7 +70,7 @@ bool SettingsDialog::applySettings()
 	{
 		if (!page->save())
 		{
-			Log::error("Failed to save: {}", page->title());
+			lib::log::error("Failed to save: {}", page->title().toStdString());
 			return false;
 		}
 	}

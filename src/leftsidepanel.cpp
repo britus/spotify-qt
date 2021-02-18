@@ -2,7 +2,8 @@
 
 #include "mainwindow.hpp"
 
-LeftSidePanel::LeftSidePanel(spt::Spotify &spotify, Settings &settings, spt::Current &current, QWidget *parent)
+LeftSidePanel::LeftSidePanel(spt::Spotify &spotify, lib::settings &settings,
+	spt::Current &current, QWidget *parent)
 	: spotify(spotify),
 	settings(settings),
 	current(current),
@@ -53,7 +54,8 @@ LeftSidePanel::LeftSidePanel(spt::Spotify &spotify, Settings &settings, spt::Cur
 
 	// Show menu when clicking now playing
 	nowPlaying->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-	QLabel::connect(nowPlaying, &QWidget::customContextMenuRequested, this, &LeftSidePanel::popupSongMenu);
+	QLabel::connect(nowPlaying, &QWidget::customContextMenuRequested,
+		this, &LeftSidePanel::popupSongMenu);
 }
 
 void LeftSidePanel::popupSongMenu(const QPoint &pos)
@@ -87,14 +89,15 @@ QIcon LeftSidePanel::currentContextIcon() const
 
 void LeftSidePanel::updateContextIcon()
 {
-	if (!settings.general.showContextInfo)
+	if (!settings.general.show_context_info)
 	{
 		contextIcon->setVisible(false);
 		contextInfo->setVisible(false);
 		return;
 	}
 
-	auto currentName = current.playback.contextType.isEmpty() || current.playback.contextUri.isEmpty()
+	auto currentName = current.playback.contextType.isEmpty()
+		|| current.playback.contextUri.isEmpty()
 		? "No context"
 		: current.playback.contextType == "album"
 			? current.playback.item.album
@@ -114,10 +117,18 @@ void LeftSidePanel::updateContextIcon()
 void LeftSidePanel::contextInfoMenu(const QPoint &pos)
 {
 	auto menu = new QMenu(contextInfo);
+
+	if (lib::developer_mode::enabled)
+	{
+		auto devContext = menu->addAction(current.context);
+		devContext->setEnabled(false);
+	}
+
 	auto open = menu->addAction(currentContextIcon(),
 		QString("Open %1").arg(current.playback.contextType));
-	menu->popup(contextInfo->mapToGlobal(pos));
 	QAction::connect(open, &QAction::triggered, this, &LeftSidePanel::contextInfoOpen);
+
+	menu->popup(contextInfo->mapToGlobal(pos));
 }
 
 void LeftSidePanel::contextInfoOpen(bool)
@@ -199,14 +210,14 @@ void LeftSidePanel::refreshPlaylists()
 	}
 
 	// Sort
-	if (settings.general.playlistOrder != PlaylistOrderDefault)
-		orderPlaylists(settings.general.playlistOrder);
+	if (settings.general.playlist_order != lib::playlist_order_default)
+		orderPlaylists(settings.general.playlist_order);
 
 	if (currentItem != nullptr)
 		playlists->setCurrentItem(currentItem);
 }
 
-void LeftSidePanel::orderPlaylists(PlaylistOrder order)
+void LeftSidePanel::orderPlaylists(lib::playlist_order order)
 {
 	QList<QListWidgetItem *> items;
 	items.reserve(playlists->count());
@@ -220,53 +231,57 @@ void LeftSidePanel::orderPlaylists(PlaylistOrder order)
 
 	switch (order)
 	{
-		case PlaylistOrderDefault:
+		case lib::playlist_order_default:
 			std::sort(items.begin(), items.end(), [](QListWidgetItem *i1, QListWidgetItem *i2)
 			{
 				return i1->data(RoleIndex).toInt() < i2->data(RoleIndex).toInt();
 			});
 			break;
 
-		case PlaylistOrderAlphabetical:
+		case lib::playlist_order_alphabetical:
 			std::sort(items.begin(), items.end(), [](QListWidgetItem *i1, QListWidgetItem *i2)
 			{
 				return i1->text() < i2->text();
 			});
 			break;
 
-		case PlaylistOrderRecent:
+		case lib::playlist_order_recent:
 			// TODO: Currently sorts by when tracks where added, not when playlist was last played
 			mainWindow = MainWindow::find(parentWidget());
 			if (mainWindow == nullptr)
 			{
-				Log::error("Failed to order playlist: MainWindow not found");
+				lib::log::error("Failed to order playlist: MainWindow not found");
 				break;
 			}
 
-			std::sort(items.begin(), items.end(), [mainWindow](QListWidgetItem *i1, QListWidgetItem *i2)
-			{
-				auto t1 = mainWindow->playlistTracks(i1->data(DataRole::RolePlaylistId).toString());
-				auto t2 = mainWindow->playlistTracks(i2->data(DataRole::RolePlaylistId).toString());
+			std::sort(items.begin(), items.end(),
+				[mainWindow](QListWidgetItem *i1, QListWidgetItem *i2)
+				{
+					auto t1 = mainWindow->playlistTracks(i1
+						->data(DataRole::RolePlaylistId).toString());
+					auto t2 = mainWindow->playlistTracks(i2
+						->data(DataRole::RolePlaylistId).toString());
 
-				return t1.length() > 0 && t2.length() > 0
-					? t1.at(latestTrack(t1)).addedAt > t2.at(latestTrack(t2)).addedAt
-					: false;
-			});
+					return t1.length() > 0 && t2.length() > 0
+						? t1.at(latestTrack(t1)).addedAt > t2.at(latestTrack(t2)).addedAt
+						: false;
+				});
 			break;
 
-		case PlaylistOrderCustom:
+		case lib::playlist_order_custom:
 			i = 0;
-			for (auto &playlist : settings.general.customPlaylistOrder)
-				customOrder[playlist] = i++;
-			std::sort(items.begin(), items.end(), [customOrder](QListWidgetItem *i1, QListWidgetItem *i2)
-			{
-				auto id1 = i1->data(DataRole::RolePlaylistId).toString();
-				auto id2 = i2->data(DataRole::RolePlaylistId).toString();
+			for (auto &playlist : settings.general.custom_playlist_order)
+				customOrder[QString::fromStdString(playlist)] = i++;
+			std::sort(items.begin(), items.end(),
+				[customOrder](QListWidgetItem *i1, QListWidgetItem *i2)
+				{
+					auto id1 = i1->data(DataRole::RolePlaylistId).toString();
+					auto id2 = i2->data(DataRole::RolePlaylistId).toString();
 
-				return customOrder.contains(id1) && customOrder.contains(id2)
-					? customOrder[id1] < customOrder[id2]
-					: false;
-			});
+					return customOrder.contains(id1) && customOrder.contains(id2)
+						? customOrder[id1] < customOrder[id2]
+						: false;
+				});
 			break;
 	}
 

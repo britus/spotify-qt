@@ -1,7 +1,10 @@
 #include "maintoolbar.hpp"
 
-MainToolBar::MainToolBar(spt::Spotify &spotify, Settings &settings, QWidget *parent)
-	: parent(parent), spotify(spotify), settings(settings), QToolBar("Media controls", parent)
+MainToolBar::MainToolBar(spt::Spotify &spotify, lib::settings &settings, QWidget *parent)
+	: parent(parent),
+	spotify(spotify),
+	settings(settings),
+	QToolBar("Media controls", parent)
 {
 	auto mainWindow = dynamic_cast<MainWindow *>(parent);
 	if (mainWindow == nullptr)
@@ -82,7 +85,7 @@ MainToolBar::MainToolBar(spt::Spotify &spotify, Settings &settings, QWidget *par
 	addWidget(progress);
 	addSeparator();
 	position = new QLabel("0:00/0:00", this);
-	if (settings.general.fixedWidthTime)
+	if (settings.general.fixed_width_time)
 		position->setFont(QFont("monospace"));
 	addWidget(position);
 	addSeparator();

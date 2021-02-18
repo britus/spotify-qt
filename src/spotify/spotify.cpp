@@ -2,20 +2,31 @@
 
 using namespace spt;
 
-Spotify::Spotify(Settings &settings, QObject *parent) : QObject(parent), settings(settings)
+Spotify::Spotify(lib::settings &settings, QObject *parent)
+	: settings(settings),
+	QObject(parent)
 {
 	lastAuth = 0;
 	networkManager = new QNetworkAccessManager(this);
+
+	if (secondsSinceEpoch() - settings.account.last_refresh < 3600)
+	{
+		lib::log::info("Last refresh was less than an hour ago, not refreshing access token");
+		lastAuth = settings.account.last_refresh;
+		refreshValid = true;
+		return;
+	}
+
 	refreshValid = refresh();
 }
 
 QNetworkRequest Spotify::request(const QString &url)
 {
 	// See when last refresh was
-	auto lastRefresh = QDateTime::currentSecsSinceEpoch() - lastAuth;
+	auto lastRefresh = secondsSinceEpoch() - lastAuth;
 	if (lastRefresh >= 3600)
 	{
-		Log::info("Access token probably expired, refreshing");
+		lib::log::info("Access token probably expired, refreshing");
 		refresh();
 	}
 
@@ -24,7 +35,9 @@ QNetworkRequest Spotify::request(const QString &url)
 
 	// Set header
 	request.setRawHeader("Authorization",
-		("Bearer " + settings.account.accessToken).toUtf8());
+		QString("Bearer %1")
+			.arg(QString::fromStdString(settings.account.access_token))
+			.toUtf8());
 
 	// Return prepared header
 	return request;
@@ -58,12 +71,13 @@ QJsonArray Spotify::getAsArray(const QString &url)
 	return get(url).array();
 }
 
-void Spotify::getLater(const QString &url)
+void Spotify::get(const QString &url,
+	const std::function<void(const QJsonDocument &json)> &callback)
 {
 	// Prepare fetch of request
 	auto context = new QObject();
 	QNetworkAccessManager::connect(networkManager, &QNetworkAccessManager::finished, context,
-		[this, context, url](QNetworkReply *reply)
+		[context, url, callback](QNetworkReply *reply)
 		{
 			auto replyUrl = reply->url().toString();
 			if (replyUrl.right(replyUrl.length() - 27) != url)
@@ -72,7 +86,7 @@ void Spotify::getLater(const QString &url)
 			// Parse reply as json
 			auto json = QJsonDocument::fromJson(reply->readAll());
 			reply->deleteLater();
-			emit got(json);
+			callback(json);
 		});
 
 	networkManager->get(request(url));
@@ -145,31 +159,32 @@ QString Spotify::errorMessage(const QJsonDocument &json, const QUrl &url)
 
 	auto message = json.object()["error"].toObject()["message"].toString();
 	if (!message.isEmpty())
-		Log::error("{} failed: {}", url.path(), message);
+		lib::log::error("{} failed: {}", url.path().toStdString(), message.toStdString());
 	return message;
 }
 
 bool Spotify::refresh()
 {
 	// Make sure we have a refresh token
-	auto refreshToken = settings.account.refreshToken;
-	if (refreshToken.isEmpty())
+	auto refreshToken = settings.account.refresh_token;
+	if (refreshToken.empty())
 	{
-		Log::warn("Attempt to refresh without refresh token");
+		lib::log::warn("Attempt to refresh without refresh token");
 		return false;
 	}
 
 	// Create form
 	auto postData = QString("grant_type=refresh_token&refresh_token=%1")
-		.arg(refreshToken)
+		.arg(QString::fromStdString(refreshToken))
 		.toUtf8();
 
 	// Create request
 	QNetworkRequest request(QUrl("https://accounts.spotify.com/api/token"));
 	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 	request.setRawHeader("Authorization", "Basic " + QString("%1:%2")
-		.arg(settings.account.clientId)
-		.arg(settings.account.clientSecret).toUtf8().toBase64());
+		.arg(QString::fromStdString(settings.account.client_id))
+		.arg(QString::fromStdString(settings.account.client_secret))
+		.toUtf8().toBase64());
 
 	// Send request
 	auto reply = networkManager->post(request, postData);
@@ -184,16 +199,17 @@ bool Spotify::refresh()
 	if (json.contains("error_description") || !json.contains("access_token"))
 	{
 		auto error = json["error_description"].toString();
-		Log::warn("Failed to refresh token: {}", error.isEmpty()
+		lib::log::warn("Failed to refresh token: {}", error.isEmpty()
 			? "no access token"
-			: error);
+			: error.toStdString());
 		return false;
 	}
 
 	// Save as access token
-	lastAuth = QDateTime::currentSecsSinceEpoch();
-	auto accessToken = json["access_token"].toString();
-	settings.account.accessToken = accessToken;
+	lastAuth = secondsSinceEpoch();
+	auto accessToken = json["access_token"].toString().toStdString();
+	settings.account.last_refresh = lastAuth;
+	settings.account.access_token = accessToken;
 	settings.save();
 	return true;
 }
@@ -244,6 +260,8 @@ QString Spotify::setDevice(const Device &device)
 
 QString Spotify::playTracks(int trackIndex, const QString &context)
 {
+	lib::log::dev("Playing track {} from {}", trackIndex, context.toStdString());
+
 	QVariantMap body;
 	body["context_uri"] = context;
 	body["offset"] = QJsonObject({
@@ -256,11 +274,14 @@ QString Spotify::playTracks(int trackIndex, const QString &context)
 
 QString Spotify::playTracks(int trackIndex, const QList<QString> &all)
 {
-	auto maxQueue = settings.spotify.maxQueue;
+	lib::log::dev("Playing track {} ({} total)", trackIndex, all.length());
+
+	auto maxQueue = settings.spotify.max_queue;
 	QStringList items = all;
 	if (all.length() > maxQueue)
 	{
-		Log::warn("Attempting to queue {} tracks, but only {} allowed", all.length(), maxQueue);
+		lib::log::warn("Attempting to queue {} tracks, but only {} allowed",
+			all.length(), maxQueue);
 		items = all.mid(trackIndex, maxQueue);
 		trackIndex = 0;
 	}
@@ -277,6 +298,8 @@ QString Spotify::playTracks(int trackIndex, const QList<QString> &all)
 
 QString Spotify::playTracks(const QString &context)
 {
+	lib::log::dev("Playing track from {}", context.toStdString());
+
 	QVariantMap body;
 	body["context_uri"] = context;
 	return put(currentDevice == nullptr
@@ -335,7 +358,8 @@ AudioFeatures Spotify::trackAudioFeatures(QString trackId)
 
 QVector<Track> Spotify::albumTracks(const QString &albumId, const QString &albumName, int offset)
 {
-	auto json = getAsObject(QString("albums/%1/tracks?limit=50&offset=%2").arg(albumId).arg(offset));
+	auto json = getAsObject(QString("albums/%1/tracks?limit=50&offset=%2")
+		.arg(albumId).arg(offset));
 	auto trackItems = json["items"].toArray();
 	QVector<Track> tracks;
 	tracks.reserve(50);
@@ -351,7 +375,8 @@ QVector<Track> Spotify::albumTracks(const QString &albumId, const QString &album
 
 	// Add all in next page
 	if (json.contains("next") && !json["next"].isNull())
-		tracks.append(albumTracks(albumId, albumName, json["offset"].toInt() + json["limit"].toInt()));
+		tracks.append(albumTracks(albumId, albumName,
+			json["offset"].toInt() + json["limit"].toInt()));
 	return tracks;
 }
 
@@ -383,6 +408,15 @@ QVector<Track> Spotify::albumTracks(const QString &albumID)
 Artist Spotify::artist(const QString &artistId)
 {
 	return Artist(getAsObject(QString("artists/%1").arg(artistId)));
+}
+
+void Spotify::artist(const QString &artistId,
+	const std::function<void(const spt::Artist &artist)> &callback)
+{
+	get(QString("artists/%1").arg(artistId), [callback](const QJsonDocument &json)
+	{
+		callback(Artist(json.object()));
+	});
 }
 
 Playlist Spotify::playlist(const QString &playlistId)
@@ -499,7 +533,8 @@ QString Spotify::removeSavedTrack(const QString &trackId)
 
 QVector<Album> Spotify::newReleases(int offset)
 {
-	auto json = getAsObject(QString("browse/new-releases?limit=50&offset=%1").arg(offset))["albums"].toObject();
+	auto json = getAsObject(QString("browse/new-releases?limit=50&offset=%1").arg(offset))["albums"]
+		.toObject();
 	auto albumItems = json["items"].toArray();
 	QVector<Album> albums;
 	albums.reserve(albumItems.size());
@@ -510,15 +545,12 @@ QVector<Album> Spotify::newReleases(int offset)
 	return albums;
 }
 
-void Spotify::requestCurrentPlayback()
+void Spotify::currentPlayback(const std::function<void(const spt::Playback &playback)> &callback)
 {
-	auto context = new QObject();
-	Spotify::connect(this, &Spotify::got, context, [this, context](const QJsonDocument &json)
+	get("me/player", [callback](const QJsonDocument &json)
 	{
-		delete context;
-		emit gotPlayback(Playback(json.object()));
+		callback(Playback(json.object()));
 	});
-	getLater("me/player");
 }
 
 User Spotify::me()
@@ -562,14 +594,37 @@ QVector<Artist> Spotify::followedArtists(const QString &offset)
 	return artists;
 }
 
-QVector<bool> Spotify::isFollowing(FollowType type, const QList<QString> &ids)
+void Spotify::isFollowing(FollowType type,
+	const QList<QString> &ids,
+	const std::function<void(const std::vector<bool> &)> &callback)
 {
-	auto json = getAsArray(QString("me/following/contains?type=%1&ids=%2")
-		.arg(followTypeString(type)).arg(ids.join(',')));
-	QVector<bool> values;
-	for (auto value : json)
-		values.append(value.toBool());
-	return values;
+	get(QString("me/following/contains?type=%1&ids=%2")
+		.arg(followTypeString(type))
+		.arg(ids.join(',')), [callback](const QJsonDocument &json)
+	{
+		std::vector<bool> values;
+		for (auto value : json.array())
+			values.push_back(value.toBool());
+		callback(values);
+	});
+}
+
+void Spotify::topTracks(const spt::Artist &artist,
+	const std::function<void(const std::vector<spt::Track> &tracks)> &callback)
+{
+	get<spt::Track>(QString("artists/%1/top-tracks?country=from_token").arg(artist.id), callback);
+}
+
+void Spotify::albums(const spt::Artist &artist,
+	const std::function<void(const std::vector<spt::Album> &albums)> &callback)
+{
+	get<spt::Album>(QString("artists/%1/albums?country=from_token").arg(artist.id), callback);
+}
+
+void Spotify::relatedArtists(const spt::Artist &artist,
+	const std::function<void(const std::vector<spt::Artist> &artists)> &callback)
+{
+	get<spt::Artist>(QString("artists/%1/related-artists").arg(artist.id), callback);
 }
 
 QString Spotify::followTypeString(FollowType type)
@@ -611,4 +666,10 @@ spt::Track Spotify::getTrack(const QString &id)
 spt::Album Spotify::getAlbum(const QString &id)
 {
 	return spt::Album(getAsObject(QString("albums/%1").arg(id)));
+}
+
+long Spotify::secondsSinceEpoch()
+{
+	return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()
+		.time_since_epoch()).count();
 }

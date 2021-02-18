@@ -1,8 +1,6 @@
 #include "mainmenu.hpp"
 
-bool MainMenu::showDeveloperMenu = false;
-
-MainMenu::MainMenu(spt::Spotify &spotify, Settings &settings, QWidget *parent)
+MainMenu::MainMenu(spt::Spotify &spotify, lib::settings &settings, QWidget *parent)
 	: settings(settings),
 	spotify(spotify),
 	QMenu(parent)
@@ -52,7 +50,7 @@ MainMenu::MainMenu(spt::Spotify &spotify, Settings &settings, QWidget *parent)
 	addAction(openSettings);
 
 	// Debug options if enabled
-	if (showDeveloperMenu)
+	if (lib::developer_mode::enabled)
 		addMenu(new DeveloperMenu(settings, this));
 
 	// Log out and quit
@@ -77,11 +75,11 @@ MainMenu::MainMenu(spt::Spotify &spotify, Settings &settings, QWidget *parent)
 
 		// Clear client secret/id if clearAll
 		if (result == clearAll)
-			this->settings.removeClient();
+			this->settings.remove_client();
 
 		// Clear login if cleatAll/logOut
 		if (result == clearAll || result == logOut)
-			this->settings.removeTokens();
+			this->settings.remove_tokens();
 		this->settings.save();
 		QMessageBox::information(MainWindow::find(parentWidget()),
 			"Logged out",

@@ -33,25 +33,27 @@ PlaylistMenu::PlaylistMenu(spt::Spotify &spotify, const spt::Playlist &playlist,
 
 	addSeparator();
 	auto playShuffle = addAction(Icon::get("media-playlist-shuffle"), "Shuffle play");
-	QAction::connect(playShuffle, &QAction::triggered, [tracks, playlist, &spotify, window](bool checked)
-	{
-		if (tracks.isEmpty())
+	QAction::connect(playShuffle, &QAction::triggered,
+		[tracks, playlist, &spotify, window](bool checked)
 		{
-			window->setStatus("No tracks found to shuffle", true);
-			return;
-		}
+			if (tracks.isEmpty())
+			{
+				window->setStatus("No tracks found to shuffle", true);
+				return;
+			}
 
-		auto initialIndex = 0;
+			auto initialIndex = 0;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-		initialIndex = QRandomGenerator::global()->bounded(0, tracks.length());
+			initialIndex = QRandomGenerator::global()->bounded(0, tracks.length());
 #endif
-		auto status = spotify.playTracks(initialIndex, QString("spotify:playlist:%1").arg(playlist.id));
+			auto status = spotify.playTracks(initialIndex,
+				QString("spotify:playlist:%1").arg(playlist.id));
 
-		if (status.isEmpty())
-			status = spotify.setShuffle(true);
-		if (!status.isEmpty())
-			window->setStatus(status, true);
-	});
+			if (status.isEmpty())
+				status = spotify.setShuffle(true);
+			if (!status.isEmpty())
+				window->setStatus(status, true);
+		});
 
 	if (isOwner)
 	{
@@ -80,6 +82,19 @@ PlaylistMenu::PlaylistMenu(spt::Spotify &spotify, const spt::Playlist &playlist,
 		Utils::openUrl(QString("https://open.spotify.com/playlist/%1")
 			.arg(QString(this->playlist.id)), LinkType::Web, this->parent);
 	});
+
+	if (lib::developer_mode::enabled)
+	{
+		auto devMenu = addMenu(Icon::get("folder-txt"), "Developer");
+		devMenu->addAction(playlist.id)->setEnabled(false);
+		QAction::connect(devMenu->addAction("As JSON"), &QAction::triggered,
+			[this](bool checked)
+			{
+				QMessageBox::information(this->parent, "JSON",
+					QJsonDocument(this->playlist.toJson(QJsonArray()))
+						.toJson(QJsonDocument::Indented));
+			});
+	}
 }
 
 PlaylistMenu::PlaylistMenu(spt::Spotify &spotify, const QString &playlistId, QWidget *parent)

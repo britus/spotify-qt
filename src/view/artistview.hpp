@@ -5,6 +5,7 @@
 #include "../menu/albummenu.hpp"
 #include "../menu/songmenu.hpp"
 #include "../spotify/spotify.hpp"
+#include "../loader.hpp"
 
 #include <QDockWidget>
 #include <QLabel>
@@ -19,9 +20,18 @@ class ArtistView: public QWidget
 Q_OBJECT
 
 public:
-	ArtistView(spt::Spotify &spotify, const QString &artistId, const Settings &settings, QWidget *parent);
+	ArtistView(spt::Spotify &spotify, const QString &artistId, const lib::settings &settings,
+		QWidget	*parent);
+
+	std::function<void(const spt::Artist &artist)> onArtistLoaded;
 
 private:
+	void artistLoaded(const spt::Artist &loadedArtist);
+	void topTracksLoaded(const std::vector<spt::Track> &tracks);
+	void albumsLoaded(const std::vector<spt::Album> &albums);
+	void relatedArtistsLoaded(const std::vector<spt::Artist> &artists);
+
+	void updateFollow(bool isFollowing);
 	void follow(bool checked);
 	void trackClick(QListWidgetItem *item);
 	void trackMenu(const QPoint &pos);
@@ -35,6 +45,15 @@ private:
 	void copyLink(bool checked);
 	void openInSpotify(bool checked);
 
+	QVBoxLayout *layout = nullptr;
+	QHBoxLayout *title = nullptr;
+	QLabel *coverLabel = nullptr;
+	QLabel *name = nullptr;
+	QMenu *menu = nullptr;
+	QToolButton *context = nullptr;
+	QLabel *genres = nullptr;
+
+	QAction *popularity = nullptr;
 	QListWidget *relatedList = nullptr;
 	QListWidget *topTracksList = nullptr;
 	QAction *followButton = nullptr;

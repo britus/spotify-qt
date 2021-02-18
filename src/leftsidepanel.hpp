@@ -5,6 +5,7 @@
 #include "spotify/current.hpp"
 #include "spotify/spotify.hpp"
 #include "util/utils.hpp"
+#include "lib/developermode.hpp"
 
 #include <QVBoxLayout>
 
@@ -13,7 +14,8 @@ class LeftSidePanel: public QWidget
 Q_OBJECT
 
 public:
-	explicit LeftSidePanel(spt::Spotify &spotify, Settings &settings, spt::Current &current, QWidget *parent = nullptr);
+	explicit LeftSidePanel(spt::Spotify &spotify, lib::settings &settings,
+		spt::Current &current, QWidget *parent);
 
 	QSet<QString> allArtists();
 	void updateContextIcon();
@@ -34,7 +36,7 @@ public:
 	spt::Playlist &playlist(size_t index);
 	QString getPlaylistNameFromSaved(const QString &id);
 	QVector<spt::Playlist> &getPlaylists();
-	void orderPlaylists(PlaylistOrder order);
+	void orderPlaylists(lib::playlist_order order);
 
 	//endregion
 
@@ -49,7 +51,7 @@ public:
 private:
 	spt::Spotify &spotify;
 	spt::Current &current;
-	Settings &settings;
+	lib::settings &settings;
 	LibraryList *libraryList;
 	PlaylistList *playlists;
 	QVector<spt::Playlist> sptPlaylists;

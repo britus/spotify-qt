@@ -1,6 +1,6 @@
 #include "playlistspage.hpp"
 
-PlaylistsPage::PlaylistsPage(Settings &settings, QWidget *parent)
+PlaylistsPage::PlaylistsPage(lib::settings &settings, QWidget *parent)
 	: SettingsPage(settings, parent)
 {
 	addTab(order(), "Order");
@@ -23,7 +23,7 @@ QWidget *PlaylistsPage::order()
 	plOrder->addItems({
 		"Default", "Alphabetical", "Recent", "Custom"
 	});
-	plOrder->setCurrentIndex(settings.general.playlistOrder);
+	plOrder->setCurrentIndex(settings.general.playlist_order);
 	typeContainer->addWidget(plOrder);
 	layout->addLayout(typeContainer);
 
@@ -39,7 +39,8 @@ QWidget *PlaylistsPage::order()
 	plListLayout = new QHBoxLayout();
 	plList = new QListWidget(this);
 	plListLayout->addWidget(plList, 1);
-	QListWidget::connect(plList, &QListWidget::currentRowChanged, this, &PlaylistsPage::playlistItemChanged);
+	QListWidget::connect(plList, &QListWidget::currentRowChanged, this,
+		&PlaylistsPage::playlistItemChanged);
 
 	auto buttons = new QToolBar(this);
 	buttons->setOrientation(Qt::Vertical);
@@ -80,20 +81,22 @@ QString PlaylistsPage::title()
 bool PlaylistsPage::save()
 {
 	// Custom playlist order
-	auto playlistOrder = (PlaylistOrder) plOrder->currentIndex();
-	if (playlistOrder == PlaylistOrderCustom)
+	auto playlistOrder = (lib::playlist_order) plOrder->currentIndex();
+	if (playlistOrder == lib::playlist_order_custom)
 	{
-		QStringList order;
+		std::vector<std::string> order;
 		for (auto i = 0; i < plList->count(); i++)
-			order.append(plList->item(i)->data(RolePlaylistId).toString());
-		settings.general.customPlaylistOrder = order;
+			order.push_back(plList->item(i)->data(RolePlaylistId).toString().toStdString());
+		settings.general.custom_playlist_order = order;
 	}
 
 	// Playlist stuff
 	auto mainWindow = MainWindow::find(parentWidget());
-	if ((settings.general.playlistOrder != playlistOrder || playlistOrder == PlaylistOrderCustom) && mainWindow != nullptr)
+	if ((settings.general.playlist_order != playlistOrder
+		|| playlistOrder == lib::playlist_order_custom)
+		&& mainWindow != nullptr)
 		mainWindow->orderPlaylists(playlistOrder);
-	settings.general.playlistOrder = playlistOrder;
+	settings.general.playlist_order = playlistOrder;
 
 	return true;
 }

@@ -6,7 +6,7 @@
 class InterfacePage: public SettingsPage
 {
 public:
-	InterfacePage(Settings &settings, QWidget *parent);
+	InterfacePage(lib::settings &settings, QWidget *parent);
 
 	QIcon icon() override;
 	QString title() override;
@@ -21,6 +21,7 @@ private:
 	QCheckBox *itfRelativeAdded = nullptr;
 	QCheckBox *itfResizeAuto = nullptr;
 	QCheckBox *itfTrackNum = nullptr;
+	QComboBox *itfStyle = nullptr;
 
 	// Tray icon
 	QCheckBox *itfTrayAlbum = nullptr;
@@ -28,10 +29,11 @@ private:
 	QCheckBox *itfTrayInvert = nullptr;
 	QCheckBox *itfTrayNotify = nullptr;
 
-	QWidget *interface();
+	QWidget *general();
 	QWidget *trayIcon();
 
 	static bool hasIconTheme();
+	void darkThemeToggle(bool checked);
 };
 
 

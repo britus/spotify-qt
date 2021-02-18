@@ -7,7 +7,7 @@ class MainWindow: public QMainWindow
 Q_OBJECT
 
 public:
-	explicit MainWindow(Settings &settings);
+	explicit MainWindow(lib::settings &settings);
 
 	static MainWindow *find(QWidget *from);
 
@@ -18,7 +18,7 @@ public:
 	QByteArray get(const QString &url);
 	QJsonDocument getJson(const QString &url);
 	void setStatus(const QString &message, bool important = false);
-	bool loadAlbum(const QString &albumId, bool ignoreEmpty = true);
+	bool loadAlbum(const QString &albumId, const QString &trackId = QString());
 	void openArtist(const QString &artistId);
 	QPixmap getAlbum(const QString &url);
 	QPixmap getImage(const QString &type, const QString &url);
@@ -33,7 +33,7 @@ public:
 	void setFixedWidthTime(bool value);
 	QVector<spt::Track> loadTracksFromCache(const QString &id);
 	void saveTracksToCache(const QString &id, const QVector<spt::Track> &tracks);
-	bool loadSongs(const QVector<spt::Track> &tracks);
+	bool loadSongs(const QVector<spt::Track> &tracks, const QString &selectedId = QString());
 	QStringList currentTracks();
 	void setPlayingTrackItem(QTreeWidgetItem *item);
 	void refresh();
@@ -52,7 +52,7 @@ public:
 	QVector<spt::Playlist> &getPlaylists();
 	int getPlaylistItemCount();
 	QListWidgetItem *getPlaylistItem(int index);
-	void orderPlaylists(PlaylistOrder order);
+	void orderPlaylists(lib::playlist_order order);
 
 	// Getters for private properties
 	QString &getCacheLocation();
@@ -67,7 +67,7 @@ public:
 
 private:
 	// Constructor
-	Settings &settings;
+	lib::settings &settings;
 
 	// Qt Widgets
 	QTreeWidget *songs = nullptr;

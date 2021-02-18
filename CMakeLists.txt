@@ -51,9 +51,6 @@ else ()
 	add_executable(spotify-qt ${MAIN_SRC} ${SUB_SRC} ${QML_RES} ${LIB_SRC} res.qrc)
 endif ()
 
-# Include headers from spotify-qt-lib
-target_include_directories(spotify-qt PRIVATE "lib")
-
 # Get version from Git
 find_package(Git QUIET)
 if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -94,6 +91,7 @@ if (USE_QT_QUICK)
 	add_subdirectory(qml)
 	target_compile_definitions(spotify-qt PRIVATE USE_QT_QUICK)
 	target_link_libraries(spotify-qt PRIVATE spotify-qt-quick)
+	set_target_properties(spotify-qt PROPERTIES OUTPUT_NAME spotify-qt-quick)
 endif ()
 
 # D-Bus support is optional

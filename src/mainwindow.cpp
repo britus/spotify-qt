@@ -1,6 +1,6 @@
 #include "mainwindow.hpp"
 
-MainWindow::MainWindow(Settings &settings)
+MainWindow::MainWindow(lib::settings &settings)
 	: settings(settings), QMainWindow()
 {
 	// Splash
@@ -19,12 +19,11 @@ MainWindow::MainWindow(Settings &settings)
 	cacheDir.mkdir("tracks");
 
 	// Apply selected style and palette
-	QApplication::setStyle(settings.general.style);
-	Utils::applyPalette(settings.general.stylePalette);
+	QApplication::setStyle(QString::fromStdString(settings.general.style));
+	Utils::applyPalette(settings.general.style_palette);
 
 	// Custom dark theme
-	if (settings.general.stylePalette == PaletteDark
-		&& MainMenu::showDeveloperMenu)
+	if (settings.general.style_palette == lib::palette_dark)
 	{
 		QFile styleFile(":/res/style/dark.qss");
 		styleFile.open(QFile::ReadOnly | QFile::Text);
@@ -74,19 +73,21 @@ MainWindow::MainWindow(Settings &settings)
 	splash->showMessage("Welcome!");
 
 	// Check if should start client
-	if (settings.spotify.startClient
-		&& (settings.spotify.alwaysStart || spotify->devices().isEmpty()))
+	if (settings.spotify.start_client
+		&& (settings.spotify.always_start || spotify->devices().isEmpty()))
 	{
 		sptClient = new spt::ClientHandler(settings, this);
 		auto status = sptClient->start();
 		if (!status.isEmpty())
+		{
 			QMessageBox::warning(this, "Client error",
 				QString("Failed to autostart Spotify client: %1").arg(status));
+		}
 	}
 
 	// Start media controller if specified
 #ifdef USE_DBUS
-	if (settings.general.mediaController)
+	if (settings.general.media_controller)
 	{
 		mediaPlayer = new mp::Service(spotify, this);
 		// Check if something went wrong during init
@@ -98,21 +99,15 @@ MainWindow::MainWindow(Settings &settings)
 	}
 #endif
 
-	// Start listening to current playback responses
-	spt::Spotify::connect(spotify, &spt::Spotify::gotPlayback, [this](const spt::Playback &playback)
-	{
-		refreshed(playback);
-	});
-
 	// Create tray icon if specified
-	if (settings.general.trayIcon)
+	if (settings.general.tray_icon)
 		trayIcon = new TrayIcon(spotify, settings, this);
 
 	// If new version has been detected, show what's new dialog
-	if (settings.general.showChangelog
-		&& settings.general.lastVersion != APP_VERSION)
+	if (settings.general.show_changelog
+		&& settings.general.last_version != APP_VERSION)
 		(new WhatsNewDialog(APP_VERSION, settings, this))->open();
-	settings.general.lastVersion = APP_VERSION;
+	settings.general.last_version = APP_VERSION;
 	settings.save();
 
 	// Welcome
@@ -129,10 +124,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::refresh()
 {
 	if (refreshCount < 0
-		|| ++refreshCount >= settings.general.refreshInterval
+		|| ++refreshCount >= settings.general.refresh_interval
 		|| current.playback.progressMs + 1000 > current.playback.item.duration)
 	{
-		spotify->requestCurrentPlayback();
+		spotify->currentPlayback([this](const spt::Playback &playback)
+		{
+			refreshed(playback);
+		});
 		refreshCount = 0;
 		return;
 	}
@@ -159,7 +157,9 @@ void MainWindow::refreshed(const spt::Playback &playback)
 		mainToolBar->playPause->setText("Play");
 		return;
 	}
-	auto currPlaying = QString("%1\n%2").arg(current.playback.item.name).arg(current.playback.item.artist);
+	auto currPlaying = QString("%1\n%2")
+		.arg(current.playback.item.name)
+		.arg(current.playback.item.artist);
 	if (leftSidePanel->getCurrentlyPlaying() != currPlaying)
 	{
 		if (current.playback.isPlaying)
@@ -181,7 +181,7 @@ void MainWindow::refreshed(const spt::Playback &playback)
 			mediaPlayer->currentSourceChanged(current.playback);
 #endif
 
-		if (trayIcon != nullptr && settings.general.trayAlbumArt)
+		if (trayIcon != nullptr && settings.general.tray_album_art)
 			trayIcon->setPixmap(getAlbum(current.playback.item.image));
 	}
 	mainToolBar->position->setText(QString("%1/%2")
@@ -193,7 +193,7 @@ void MainWindow::refreshed(const spt::Playback &playback)
 		? "media-playback-pause"
 		: "media-playback-start"));
 	mainToolBar->playPause->setText(current.playback.isPlaying ? "Pause" : "Play");
-	if (!settings.general.pulseVolume)
+	if (!settings.general.pulse_volume)
 		mainToolBar->volumeButton->setVolume(current.playback.volume() / 5);
 	mainToolBar->repeat->setChecked(current.playback.repeat != "off");
 	mainToolBar->shuffle->setChecked(current.playback.shuffle);
@@ -212,7 +212,7 @@ QWidget *MainWindow::createCentralWidget()
 	//endregion
 
 	// Load tracks in playlist
-	auto playlistId = settings.general.lastPlaylist;
+	auto playlistId = QString::fromStdString(settings.general.last_playlist);
 	if (leftSidePanel->playlistCount() <= 0)
 	{
 		// If no playlists were found
@@ -248,7 +248,8 @@ QWidget *MainWindow::createCentralWidget()
 	return container;
 }
 
-void MainWindow::openAudioFeaturesWidget(const QString &trackId, const QString &artist, const QString &name)
+void MainWindow::openAudioFeaturesWidget(const QString &trackId,
+	const QString &artist, const QString &name)
 {
 	dynamic_cast<SidePanel *>(sidePanel)->openAudioFeatures(trackId, artist, name);
 }
@@ -270,7 +271,7 @@ void MainWindow::openLyrics(const QString &artist, const QString &name)
 	addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, lyricsView);
 }
 
-bool MainWindow::loadSongs(const QVector<spt::Track> &tracks)
+bool MainWindow::loadSongs(const QVector<spt::Track> &tracks, const QString &selectedId)
 {
 	songs->clear();
 	trackItems.clear();
@@ -281,14 +282,14 @@ bool MainWindow::loadSongs(const QVector<spt::Track> &tracks)
 	{
 		auto track = tracks.at(i);
 		auto item = new TrackListItem({
-			settings.general.trackNumbers == ContextAll
+			settings.general.track_numbers == lib::context_all
 				? QString("%1").arg(i + 1, fieldWidth)
 				: "",
 			track.name, track.artist, track.album,
 			Utils::formatTime(track.duration),
 			DateUtils::isEmpty(track.addedAt)
 				? QString()
-				: settings.general.relativeAdded
+				: settings.general.relative_added
 				? DateUtils::toRelative(track.addedAt)
 				: QLocale().toString(track.addedAt.date(), QLocale::ShortFormat)
 		}, track, emptyIcon, i);
@@ -298,25 +299,28 @@ bool MainWindow::loadSongs(const QVector<spt::Track> &tracks)
 
 		songs->insertTopLevelItem(i, item);
 		trackItems[track.id] = item;
+
+		if (track.id == selectedId)
+			songs->setCurrentItem(item);
 	}
 
 	return true;
 }
 
-bool MainWindow::loadAlbum(const QString &albumId, bool ignoreEmpty)
+bool MainWindow::loadAlbum(const QString &albumId, const QString &trackId)
 {
 	auto tracks = loadTracksFromCache(albumId);
 	if (tracks.isEmpty())
 		tracks = spotify->albumTracks(albumId);
 
-	if (ignoreEmpty && tracks.length() <= 1)
-		setStatus("Album only contains one song or is empty", true);
+	if (tracks.length() <= 0)
+		setStatus("Album is empty", true);
 	else
 	{
 		leftSidePanel->setCurrentPlaylistItem(-1);
 		leftSidePanel->setCurrentLibraryItem(nullptr);
 		current.context = QString("spotify:album:%1").arg(albumId);
-		loadSongs(tracks);
+		loadSongs(tracks, trackId);
 		saveTracksToCache(albumId, tracks);
 	}
 
@@ -354,7 +358,7 @@ bool MainWindow::loadPlaylist(spt::Playlist &playlist)
 {
 	if (!leftSidePanel->getPlaylistNameFromSaved(playlist.id).isEmpty())
 	{
-		settings.general.lastPlaylist = playlist.id;
+		settings.general.last_playlist = playlist.id.toStdString();
 		settings.save();
 	}
 	if (loadPlaylistFromCache(playlist))
@@ -408,7 +412,8 @@ void MainWindow::refreshPlaylist(spt::Playlist &playlist)
 	auto result = newPlaylist.loadTracks(*spotify, tracks);
 	if (!result)
 	{
-		Log::error("Failed to refresh playlist \"{}\" ({})", playlist.name, playlist.id);
+		lib::log::error("Failed to refresh playlist \"{}\" ({})",
+			playlist.name.toStdString(), playlist.id.toStdString());
 		return;
 	}
 	if (current.context.endsWith(playlist.id))
@@ -421,7 +426,7 @@ void MainWindow::setStatus(const QString &message, bool important)
 	if (message.isNull() || message.isEmpty())
 		return;
 
-	if (trayIcon != nullptr && settings.general.trayNotifications)
+	if (trayIcon != nullptr && settings.general.tray_notifications)
 	{
 		if (important)
 			trayIcon->message(message);
@@ -457,7 +462,10 @@ QPixmap MainWindow::getImage(const QString &type, const QString &url)
 	if (url.isEmpty())
 		return img;
 	// Check if cache exists
-	auto cachePath = QString("%1/%2/%3").arg(cacheLocation).arg(type).arg(QFileInfo(url).baseName());
+	auto cachePath = QString("%1/%2/%3")
+		.arg(cacheLocation)
+		.arg(type)
+		.arg(QFileInfo(url).baseName());
 	if (QFileInfo::exists(cachePath))
 	{
 		// Read file from cache
@@ -470,7 +478,7 @@ QPixmap MainWindow::getImage(const QString &type, const QString &url)
 		// Download image and save to cache
 		img.loadFromData(get(url), "jpeg");
 		if (!img.save(cachePath, "jpeg"))
-			Log::error("Failed to save album cache to {}", cachePath);
+			lib::log::error("Failed to save album cache to {}", cachePath.toStdString());
 	}
 	return img;
 }
@@ -520,7 +528,7 @@ void MainWindow::reloadTrayIcon()
 		delete trayIcon;
 		trayIcon = nullptr;
 	}
-	if (settings.general.trayIcon)
+	if (settings.general.tray_icon)
 		trayIcon = new TrayIcon(spotify, settings, this);
 }
 
@@ -671,7 +679,7 @@ QListWidgetItem *MainWindow::getPlaylistItem(int index)
 	return leftSidePanel->playlistItem(index);
 }
 
-void MainWindow::orderPlaylists(PlaylistOrder order)
+void MainWindow::orderPlaylists(lib::playlist_order order)
 {
 	leftSidePanel->orderPlaylists(order);
 }

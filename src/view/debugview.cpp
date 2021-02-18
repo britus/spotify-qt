@@ -1,7 +1,8 @@
 #include "debugview.hpp"
 
-DebugView::DebugView(const Settings &settings, QWidget *parent)
-	: settings(settings), QWidget(parent)
+DebugView::DebugView(const lib::settings &settings, QWidget *parent)
+	: settings(settings),
+	QWidget(parent)
 {
 	auto layout = new QVBoxLayout(this);
 	layout->setAlignment(Qt::AlignTop);
@@ -50,7 +51,8 @@ void DebugView::sendRequest(bool)
 
 	if (!jsonRequest->toPlainText().isEmpty())
 	{
-		auto jsonBody = QJsonDocument::fromJson(jsonRequest->toPlainText().toUtf8(), &jsonParseError);
+		auto jsonBody = QJsonDocument::fromJson(jsonRequest->toPlainText().toUtf8(),
+			&jsonParseError);
 		if (jsonParseError.error != QJsonParseError::NoError)
 		{
 			QMessageBox::warning(this, "JSON parse error", jsonParseError.errorString());
@@ -64,10 +66,12 @@ void DebugView::sendRequest(bool)
 
 	QNetworkRequest request(QString("https://api.spotify.com/v1/%1").arg(urlPath->text()));
 	request.setRawHeader("Authorization",
-		("Bearer " + settings.account.accessToken).toUtf8());
+		QString("Bearer %1")
+			.arg(QString::fromStdString(settings.account.access_token)).toUtf8());
 
 	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-	auto reply = networkManager->sendCustomRequest(request, requestType->currentText().toUtf8(), jsonData);
+	auto reply = networkManager
+		->sendCustomRequest(request, requestType->currentText().toUtf8(), jsonData);
 
 	while (!reply->isFinished())
 		QCoreApplication::processEvents();
