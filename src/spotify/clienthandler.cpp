@@ -6,304 +6,304 @@ using namespace spt;
 QList<QPair<QDateTime, QString>> ClientHandler::log;
 
 ClientHandler::ClientHandler(const Settings &settings, QWidget *parent)
-	: settings(settings), parentWidget(parent), QObject(parent)
+    : QObject(parent), parentWidget(parent), settings(settings)
 {
-	path = settings.spotify.path;
-	process = new QProcess(parent);
-	clientType = getClientType(path);
+    path = settings.spotify.path;
+    process = new QProcess(parent);
+    clientType = getClientType(path);
 }
 
 ClientHandler::~ClientHandler()
 {
-	if (process != nullptr)
-		process->close();
+    if (process != nullptr)
+        process->close();
 }
 
 QString ClientHandler::start()
 {
-	// Don't start if already running
-	if (isRunning())
-		return QString();
+    // Don't start if already running
+    if (isRunning())
+        return QString();
 
-	// Check if empty
-	if (clientType == ClientType::None)
-		return "path is empty or invalid";
+    // Check if empty
+    if (clientType == ClientType::None)
+        return "path is empty or invalid";
 
-	// Check if path exists
-	QFileInfo info(path);
-	if (!info.exists())
-		return "file in path does not exist";
+    // Check if path exists
+    QFileInfo info(path);
+    if (!info.exists())
+        return "file in path does not exist";
 
-	// If using global config, just start
-	if (settings.spotify.globalConfig && clientType == ClientType::Spotifyd)
-	{
-		process->start(path, QStringList());
-		return QString();
-	}
+    // If using global config, just start
+    if (settings.spotify.globalConfig && clientType == ClientType::Spotifyd)
+    {
+        process->start(path, QStringList());
+        return QString();
+    }
 
-	// Check if username exists
-	auto username = settings.spotify.username;
-	if (username.isEmpty())
-		return "no username provided";
+    // Check if username exists
+    auto username = settings.spotify.username;
+    if (username.isEmpty())
+        return "no username provided";
 
-	// Get password from keyring if set
-	QString password;
+    // Get password from keyring if set
+    QString password;
 #ifdef USE_DBUS
-	KWallet keyring(username);
-	if (settings.spotify.keyringPassword && keyring.unlock())
-		password = keyring.readPassword();
+    KWallet keyring(username);
+    if (settings.spotify.keyringPassword && keyring.unlock())
+        password = keyring.readPassword();
 #endif
 
-	// Ask for password
-	if (password.isEmpty())
-	{
-		password = QInputDialog::getText(parentWidget,
-			"Enter password",
-			QString("Enter password for Spotify user \"%1\":").arg(username),
-			QLineEdit::Password);
+    // Ask for password
+    if (password.isEmpty())
+    {
+        password = QInputDialog::getText(parentWidget,
+            "Enter password",
+            QString("Enter password for Spotify user \"%1\":").arg(username),
+            QLineEdit::Password);
 
-		if (password.isEmpty())
-			return "no password provided";
+        if (password.isEmpty())
+            return "no password provided";
 
 #ifdef USE_DBUS
-		if (settings.spotify.keyringPassword)
-			keyring.writePassword(password);
+        if (settings.spotify.keyringPassword)
+            keyring.writePassword(password);
 #endif
-	}
+    }
 
-	// Common arguments
-	QStringList arguments({
-		"--bitrate", QString::number(settings.spotify.bitrate),
-		"--username", username,
-		"--password", password
-	});
+    // Common arguments
+    QStringList arguments({
+        "--bitrate", QString::number(settings.spotify.bitrate),
+        "--username", username,
+        "--password", password
+    });
 
-	// librespot specific
-	if (clientType == ClientType::Librespot)
-	{
-		arguments.append({
-			"--name", "spotify-qt (librespot)",
-			"--initial-volume", "100",
-			"--autoplay",
-			"--cache", QString("%1/librespot").arg(((MainWindow *) parentWidget)->getCacheLocation())
-		});
-	}
-	else if (clientType == ClientType::Spotifyd)
-	{
-		arguments.append({
-			"--no-daemon",
-			"--device-name", "spotify-qt (spotifyd)",
-		});
-	}
+    // librespot specific
+    if (clientType == ClientType::Librespot)
+    {
+        arguments.append({
+            "--name", "spotify-qt (librespot)",
+            "--initial-volume", "100",
+            "--autoplay",
+            "--cache", QString("%1/librespot").arg(((MainWindow *) parentWidget)->getCacheLocation())
+        });
+    }
+    else if (clientType == ClientType::Spotifyd)
+    {
+        arguments.append({
+            "--no-daemon",
+            "--device-name", "spotify-qt (spotifyd)",
+        });
+    }
 
-	auto backend = settings.spotify.backend;
-	if (backend.isEmpty() && supportsPulse())
-	{
-		backend = "pulseaudio";
-	}
-	arguments.append({
-		"--backend", backend
-	});
+    auto backend = settings.spotify.backend;
+    if (backend.isEmpty() && supportsPulse())
+    {
+        backend = "pulseaudio";
+    }
+    arguments.append({
+        "--backend", backend
+    });
 
-	QProcess::connect(process, &QProcess::readyReadStandardOutput, this, &ClientHandler::readyRead);
-	QProcess::connect(process, &QProcess::readyReadStandardError, this, &ClientHandler::readyError);
+    QProcess::connect(process, &QProcess::readyReadStandardOutput, this, &ClientHandler::readyRead);
+    QProcess::connect(process, &QProcess::readyReadStandardError, this, &ClientHandler::readyError);
 
-	process->start(path, arguments);
-	return QString();
+    process->start(path, arguments);
+    return QString();
 }
 
 QString ClientHandler::clientExec(const QString &path, const QStringList &arguments)
 {
-	// Check if it exists
-	QFileInfo file(path);
-	if (!file.exists())
-		return QString();
+    // Check if it exists
+    QFileInfo file(path);
+    if (!file.exists())
+        return QString();
 
-	// Check if either client
-	if (getClientType(path) == ClientType::None)
-		return QString();
+    // Check if either client
+    if (getClientType(path) == ClientType::None)
+        return QString();
 
-	// Prepare process
-	QProcess process;
+    // Prepare process
+    QProcess process;
 
-	// Get version info
-	process.start(file.absoluteFilePath(), arguments);
-	process.waitForFinished();
+    // Get version info
+    process.start(file.absoluteFilePath(), arguments);
+    process.waitForFinished();
 
-	// Entire stdout is version
-	return process.readAllStandardOutput().trimmed();
+    // Entire stdout is version
+    return process.readAllStandardOutput().trimmed();
 }
 
 QStringList ClientHandler::availableBackends()
 {
-	QStringList items;
+    QStringList items;
 
-	if (clientType == ClientType::Librespot)
-	{
-		auto result = clientExec(path, QStringList({
-			"--name", "",
-			"--backend", "?"
-		}));
+    if (clientType == ClientType::Librespot)
+    {
+        auto result = clientExec(path, QStringList({
+            "--name", "",
+            "--backend", "?"
+        }));
 
-		for (auto &line : result.split('\n'))
-		{
-			if (!line.startsWith("-"))
-				continue;
-			items.append(line.right(line.length() - 2)
-				.remove("(default)")
-				.trimmed());
-		}
-	}
-	else if (clientType == ClientType::Spotifyd)
-	{
-		auto result = clientExec(path, QStringList({
-			"--help",
-		}));
+        for (auto &line : result.split('\n'))
+        {
+            if (!line.startsWith("-"))
+                continue;
+            items.append(line.right(line.length() - 2)
+                .remove("(default)")
+                .trimmed());
+        }
+    }
+    else if (clientType == ClientType::Spotifyd)
+    {
+        auto result = clientExec(path, QStringList({
+            "--help",
+        }));
 
-		for (auto &line : result.split('\n'))
-		{
-			if (!line.contains("audio backend"))
-				continue;
+        for (auto &line : result.split('\n'))
+        {
+            if (!line.contains("audio backend"))
+                continue;
 
-			items.append(line.right(line.length() - line.indexOf('[') - 1)
-				.remove("possible values: ")
-				.remove(']')
-				.trimmed()
-				.split(", "));
-			break;
-		}
-	}
+            items.append(line.right(line.length() - line.indexOf('[') - 1)
+                .remove("possible values: ")
+                .remove(']')
+                .trimmed()
+                .split(", "));
+            break;
+        }
+    }
 
-	return items;
+    return items;
 }
 
 bool ClientHandler::supportsPulse()
 {
-	return clientExec(path, clientType == ClientType::Librespot
-		? QStringList({
-			"--name", "",
-			"--backend", "?"
-		}) : QStringList({
-			"--help"
-		}))
-		.contains("pulseaudio");
+    return clientExec(path, clientType == ClientType::Librespot
+        ? QStringList({
+            "--name", "",
+            "--backend", "?"
+        }) : QStringList({
+            "--help"
+        }))
+        .contains("pulseaudio");
 }
 
 QString ClientHandler::version(const QString &path)
 {
-	auto clientType = getClientType(path);
+    auto clientType = getClientType(path);
 
-	return clientType == ClientType::Spotifyd
-		? clientExec(path, {
-			"--version"
-		}) : clientType == ClientType::Librespot
-			? "librespot"
-			: QString();
+    return clientType == ClientType::Spotifyd
+        ? clientExec(path, {
+            "--version"
+        }) : clientType == ClientType::Librespot
+            ? "librespot"
+            : QString();
 }
 
 bool ClientHandler::isRunning()
 {
-	if (path.isEmpty() || !QFile("/usr/bin/ps").exists())
-		return false;
+    if (path.isEmpty() || !QFile("/usr/bin/ps").exists())
+        return false;
 
-	QProcess ps;
-	ps.start("/usr/bin/ps", {"aux"});
-	ps.waitForFinished();
-	auto out = ps.readAllStandardOutput();
-	return QString(out).contains(path);
+    QProcess ps;
+    ps.start("/usr/bin/ps", {"aux"});
+    ps.waitForFinished();
+    auto out = ps.readAllStandardOutput();
+    return QString(out).contains(path);
 }
 
 QString ClientHandler::getSinkInfo()
 {
-	if (!QFileInfo::exists("/usr/bin/pactl"))
-		return QString();
-	QProcess process;
+    if (!QFileInfo::exists("/usr/bin/pactl"))
+        return QString();
+    QProcess process;
 
-	// Find what sink to use
-	process.start("/usr/bin/pactl", {
-		"list", "sink-inputs"
-	});
-	process.waitForFinished();
-	auto sinks = QString(process.readAllStandardOutput()).split("Sink Input #");
-	for (auto &sink : sinks)
-		if (sink.contains("Spotify"))
-			return sink;
+    // Find what sink to use
+    process.start("/usr/bin/pactl", {
+        "list", "sink-inputs"
+    });
+    process.waitForFinished();
+    auto sinks = QString(process.readAllStandardOutput()).split("Sink Input #");
+    for (auto &sink : sinks)
+        if (sink.contains("Spotify"))
+            return sink;
 
-	return QString();
+    return QString();
 }
 
 float ClientHandler::getVolume()
 {
-	auto sink = getSinkInfo();
-	if (sink.isEmpty())
-		return 1.f;
-	auto i = sink.indexOf("Volume:");
-	if (i < 0)
-		return 1.f;
+    auto sink = getSinkInfo();
+    if (sink.isEmpty())
+        return 1.f;
+    auto i = sink.indexOf("Volume:");
+    if (i < 0)
+        return 1.f;
 
-	bool ok;
-	for (auto &p : sink.right(sink.length() - i).split(' '))
-	{
-		if (!p.endsWith('%'))
-			continue;
-		auto v = p.left(p.length() - 1).toInt(&ok);
-		if (!ok)
-			continue;
-		return v / 100.f;
-	}
+    bool ok;
+    for (auto &p : sink.right(sink.length() - i).split(' '))
+    {
+        if (!p.endsWith('%'))
+            continue;
+        auto v = p.left(p.length() - 1).toInt(&ok);
+        if (!ok)
+            continue;
+        return v / 100.f;
+    }
 
-	return 1.f;
+    return 1.f;
 }
 
 void ClientHandler::setVolume(float value)
 {
-	auto sink = getSinkInfo();
-	if (sink.isEmpty())
-		return;
+    auto sink = getSinkInfo();
+    if (sink.isEmpty())
+        return;
 
-	// Sink was found, get id
-	auto left = sink.left(sink.indexOf('\n'));
-	auto sinkId = left.right(left.length() - left.lastIndexOf('#') - 1);
-	QProcess process;
-	process.start("/usr/bin/pactl", {
-		"set-sink-input-volume", sinkId, QString::number(value, 'f', 2)
-	});
+    // Sink was found, get id
+    auto left = sink.left(sink.indexOf('\n'));
+    auto sinkId = left.right(left.length() - left.lastIndexOf('#') - 1);
+    QProcess process;
+    process.start("/usr/bin/pactl", {
+        "set-sink-input-volume", sinkId, QString::number(value, 'f', 2)
+    });
 
-	process.waitForFinished();
+    process.waitForFinished();
 }
 
 void ClientHandler::logOutput(const QByteArray &output) const
 {
-	for (auto &line : QString(output).split('\n'))
-	{
-		if (line.isEmpty())
-			continue;
-		log << QPair<QDateTime, QString>(QDateTime::currentDateTime(), line);
-	}
+    for (auto &line : QString(output).split('\n'))
+    {
+        if (line.isEmpty())
+            continue;
+        log << QPair<QDateTime, QString>(QDateTime::currentDateTime(), line);
+    }
 }
 
 void ClientHandler::readyRead() const
 {
-	logOutput(process->readAllStandardOutput());
+    logOutput(process->readAllStandardOutput());
 }
 
 void ClientHandler::readyError() const
 {
-	logOutput(process->readAllStandardError());
+    logOutput(process->readAllStandardError());
 }
 
 QList<QPair<QDateTime, QString>> ClientHandler::getLog()
 {
-	return log;
+    return log;
 }
 
 ClientType ClientHandler::getClientType(const QString &path)
 {
-	auto baseName = QFileInfo(path).baseName().toLower();
+    auto baseName = QFileInfo(path).baseName().toLower();
 
-	return baseName == "spotifyd"
-		? ClientType::Spotifyd
-		: baseName == "librespot"
-			? ClientType::Librespot
-			: ClientType::None;
+    return baseName == "spotifyd"
+        ? ClientType::Spotifyd
+        : baseName == "librespot"
+            ? ClientType::Librespot
+            : ClientType::None;
 }

@@ -39,29 +39,23 @@ PlaylistEditDialog::PlaylistEditDialog(spt::Spotify *spotify, const spt::Playlis
 
 	// Dialog buttons
 	auto buttons = new QDialogButtonBox(this);
-	buttons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	QDialogButtonBox::connect(buttons, &QDialogButtonBox::accepted, [this, playlist, spotify]
-	{
-		auto pl = playlist;
-		pl.name = name->text();
-		pl.description = description->toPlainText();
-		pl.isPublic = isPublic->isChecked();
-		pl.collaborative = isCollaborative->isChecked();
-		auto result = spotify->editPlaylist(pl);
-		if (result.isEmpty())
-		{
-			accept();
-			return;
-		}
-		QMessageBox::warning(this, "Edit failed",
-			QString("Failed to save changes: %1").arg(result));
-	});
+    buttons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    QDialogButtonBox::connect(buttons, &QDialogButtonBox::accepted, [this, playlist, spotify] {
+        auto pl = playlist;
+        pl.name = name->text();
+        pl.description = description->toPlainText();
+        pl.isPublic = isPublic->isChecked();
+        pl.collaborative = isCollaborative->isChecked();
+        auto result = spotify->editPlaylist(pl);
+        if (result.isEmpty()) {
+            accept();
+            return;
+        }
+        QMessageBox::warning(this, "Edit failed", QString("Failed to save changes: %1").arg(result));
+    });
 
-	QDialogButtonBox::connect(buttons, &QDialogButtonBox::rejected, [this]
-	{
-		reject();
-	});
+    QDialogButtonBox::connect(buttons, &QDialogButtonBox::rejected, [this] { reject(); });
 
-	layout->addWidget(buttons);
+    layout->addWidget(buttons);
 	setLayout(layout);
 }

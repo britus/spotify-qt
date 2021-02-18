@@ -2,8 +2,7 @@
 
 using namespace spt;
 
-Spotify::Spotify(Settings &settings, QObject *parent)
-	: settings(settings), QObject(parent)
+Spotify::Spotify(Settings &settings, QObject *parent) : QObject(parent), settings(settings)
 {
 	lastAuth = 0;
 	networkManager = new QNetworkAccessManager(this);
