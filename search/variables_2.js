@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['client_5fid_188',['client_id',['../structlib_1_1set_1_1account.html#a71a7b7b8c7766af3bbe3a18d72ee1b73',1,'lib::set::account']]],
-  ['client_5fsecret_189',['client_secret',['../structlib_1_1set_1_1account.html#a8f71cdb24407039c179b3208f3140b4e',1,'lib::set::account']]],
-  ['custom_5fplaylist_5forder_190',['custom_playlist_order',['../structlib_1_1set_1_1general.html#ae369f9a24d410c8e1113fa9c3a495f7f',1,'lib::set::general']]]
+  ['collaborative_0',['collaborative',['../classlib_1_1spt_1_1playlist.html#aa0f4ab3aa888669049dc17805a9402e5',1,'lib::spt::playlist::collaborative'],['../classlib_1_1spt_1_1playlist__details.html#a462a0bc941d80ba4b1ffb2639bd53e57',1,'lib::spt::playlist_details::collaborative']]],
+  ['content_1',['content',['../classlib_1_1ddg_1_1results.html#aaa1f4ea604677a5e8eb82a9dff4d37a5',1,'lib::ddg::results']]],
+  ['context_2',['context',['../classlib_1_1spt_1_1playback.html#ab80dbe821d37e348298beeb56cde4c87',1,'lib::spt::playback']]],
+  ['contributions_3',['contributions',['../classlib_1_1gh_1_1contributor.html#afb6d312970c05ed73ae6903a405e14a7',1,'lib::gh::contributor']]],
+  ['currently_5fplaying_4',['currently_playing',['../classlib_1_1spt_1_1queue.html#a06e17445c93f2e22327a7ba27456ca4a',1,'lib::spt::queue']]]
 ];

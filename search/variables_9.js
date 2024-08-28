@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['max_5fqueue_202',['max_queue',['../structlib_1_1set_1_1spotify.html#a85004b11863196329d84c24841be16d7',1,'lib::set::spotify']]],
-  ['media_5fcontroller_203',['media_controller',['../structlib_1_1set_1_1general.html#aa0aeb913a3cf2cb58cb545eb16ed0413',1,'lib::set::general']]]
+  ['kilo_0',['kilo',['../classlib_1_1format.html#abc695a8fe849d4d9f68c6274761dc858',1,'lib::format']]]
 ];

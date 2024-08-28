@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['remove_160',['remove',['../classlib_1_1strings.html#ace979c512c9807e4ec0c09feab77b2e8',1,'lib::strings']]],
-  ['remove_5fclient_161',['remove_client',['../classlib_1_1settings.html#a5444968f3d5ae6890866906e3c0d5c58',1,'lib::settings']]],
-  ['remove_5ftokens_162',['remove_tokens',['../classlib_1_1settings.html#a6758eedb1130246712f81aebd9023881',1,'lib::settings']]],
-  ['right_163',['right',['../classlib_1_1strings.html#a2b6420a57909607d92feb8d11ad5f0d4',1,'lib::strings']]]
+  ['next_0',['next',['../classlib_1_1random.html#a8a6870faaa9accd2673393296a402ad9',1,'lib::random::next()'],['../classlib_1_1spt_1_1api.html#a01fc1b68241b86c107b11c9ebc3eeea4',1,'lib::spt::api::next()']]],
+  ['now_1',['now',['../classlib_1_1date__time.html#a0bfc48932543d18c486119c84458c14a',1,'lib::date_time']]],
+  ['now_5futc_2',['now_utc',['../classlib_1_1date__time.html#a9f27a893ead35709fc01030c193a05cf',1,'lib::date_time']]]
 ];

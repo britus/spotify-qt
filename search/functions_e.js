@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['validate_181',['validate',['../classlib_1_1settings.html#a041a743b7ab53f5cd0fa671162556c7e',1,'lib::settings']]]
+  ['qt_0',['qt',['../classlib_1_1settings.html#ae2e514cf3a79cda0aaf27a98c04eb028',1,'lib::settings']]],
+  ['queue_1',['queue',['../classlib_1_1spt_1_1api.html#ae7038f645ad3f9082ae721d844932dbf',1,'lib::spt::api']]]
 ];

@@ -1,10 +1,12 @@
 var searchData=
 [
-  ['fallback_5ficons_23',['fallback_icons',['../structlib_1_1set_1_1general.html#a8df3de7b4e501432a5c73585f79ceb5d',1,'lib::set::general']]],
-  ['file_5fname_24',['file_name',['../classlib_1_1settings.html#a23cfc15d1c6b378b29412bc803d49712',1,'lib::settings']]],
-  ['file_5fpath_25',['file_path',['../classlib_1_1settings.html#aaba88aa1cc775f04eab7a70dead99da8',1,'lib::settings']]],
-  ['fixed_5fwidth_5ftime_26',['fixed_width_time',['../structlib_1_1set_1_1general.html#a7cd2767319f0046d265c26a22d99e6ae',1,'lib::set::general']]],
-  ['fmt_27',['fmt',['../classlib_1_1fmt.html',1,'lib']]],
-  ['format_28',['format',['../classlib_1_1fmt.html#ae7622b4dbd5bd42aed59939aace7bddc',1,'lib::fmt::format(const Format &amp;fmt)'],['../classlib_1_1fmt.html#aad7321d5f64ba77f0e1e2375b312a97b',1,'lib::fmt::format(const Format &amp;fmt, const Arg &amp;arg, Args &amp;&amp;... args)']]],
-  ['from_5fjson_29',['from_json',['../classlib_1_1settings.html#a0d1e6c61d841e48fae419b5aa8b69c59',1,'lib::settings']]]
+  ['fail_0',['fail',['../classlib_1_1result.html#a9227d5a20285230afe413aee8c66838b',1,'lib::result']]],
+  ['file_5fname_1',['file_name',['../classlib_1_1settings.html#a56901cc8dda5b45efa71aaa2fcdf65b1',1,'lib::settings']]],
+  ['file_5fpath_2',['file_path',['../classlib_1_1settings.html#af93cabb51a449bc1f76fc4303f943663',1,'lib::settings']]],
+  ['find_5fitem_3',['find_item',['../classlib_1_1json.html#ab2a176518327d25b2681d7e7ad1a94f8',1,'lib::json']]],
+  ['fmt_4',['fmt',['../classlib_1_1fmt.html',1,'lib']]],
+  ['follow_5ftype_5fstring_5',['follow_type_string',['../classlib_1_1spt_1_1api.html#affa5db54d3cb40ede82e59dee74deddf',1,'lib::spt::api']]],
+  ['followers_6',['followers',['../classlib_1_1spt_1_1artist.html#a9e18c773e6f8a4d05dd8e7d8eb159ca0',1,'lib::spt::artist']]],
+  ['format_7',['format',['../classlib_1_1format.html',1,'lib']]],
+  ['from_5fjson_8',['from_json',['../classlib_1_1settings.html#a94b9c2c8559f515eccfd406083f5fcce',1,'lib::settings']]]
 ];

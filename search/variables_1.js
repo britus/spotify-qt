@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['backend_186',['backend',['../structlib_1_1set_1_1spotify.html#a31c356dde78981f894eed236918aad1d',1,'lib::set::spotify']]],
-  ['bitrate_187',['bitrate',['../structlib_1_1set_1_1spotify.html#aebccb2064d9930f86594866ea6d10150',1,'lib::set::spotify']]]
+  ['body_0',['body',['../classlib_1_1gh_1_1release.html#ae9587164efa225f319e3e4703bafb101',1,'lib::gh::release']]]
 ];
