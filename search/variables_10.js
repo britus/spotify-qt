@@ -8,5 +8,7 @@ var searchData=
   ['size_5fsmall_5',['size_small',['../classlib_1_1spt_1_1image.html#a65016896f02a42915f896d2de663ca86',1,'lib::spt::image']]],
   ['snapshot_6',['snapshot',['../classlib_1_1spt_1_1playlist.html#ae2eff6fa44f518622c1df2ecfe677f62',1,'lib::spt::playlist']]],
   ['spotify_7',['spotify',['../classlib_1_1settings.html#a15cb6ff4193e655f271d8d76787c2507',1,'lib::settings']]],
-  ['stack_5ftrace_8',['stack_trace',['../classlib_1_1crash__info.html#a6470c0cfcaea6a053ddd9da81e626ef2',1,'lib::crash_info']]]
+  ['stack_5ftrace_8',['stack_trace',['../classlib_1_1crash__info.html#a6470c0cfcaea6a053ddd9da81e626ef2',1,'lib::crash_info']]],
+  ['status_5fcode_9',['status_code',['../classlib_1_1lrc_1_1error.html#af131901b1140aaee91517718b4c96291',1,'lib::lrc::error']]],
+  ['synced_5flyrics_10',['synced_lyrics',['../classlib_1_1lrc_1_1lyrics.html#a41627b7c0eb2981057eb21f3728720a6',1,'lib::lrc::lyrics']]]
 ];
